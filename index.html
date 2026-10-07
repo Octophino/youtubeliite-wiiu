@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>YouTube Liite</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar (Wii U GamePad Optimized) -->
+  <header class="navbar">
+    <div class="brand">
+      <span class="wii-cyan">YouTube</span> <span class="yt-red">Liite</span>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-btn active" id="tab-home" onclick="switchTab('home')">🏠 Home</button>
+      <button class="nav-btn" id="tab-search" onclick="switchTab('search')">🔍 Search</button>
+      <button class="nav-btn" id="tab-favorites" onclick="switchTab('favorites')">⭐ Favorites</button>
+      <button class="nav-btn" id="tab-history" onclick="switchTab('history')">📜 History</button>
+    </nav>
+  </header>
+
+  <!-- Main Application Area -->
+  <main class="container">
+
+    <!-- Active Player Overlay (DigiView Style) -->
+    <section id="player-section" class="player-section hidden">
+      <div class="player-card">
+        <div class="player-wrapper" id="player-container">
+          <!-- iframe injected here -->
+        </div>
+        <div class="player-controls">
+          <div class="video-info">
+            <h2 id="player-title">Video Title</h2>
+            <p id="player-channel">Channel Name</p>
+          </div>
+          <div class="player-actions">
+            <button class="btn btn-fav" id="btn-toggle-fav" onclick="toggleCurrentFavorite()">⭐ Favorite</button>
+            <button class="btn btn-engine" onclick="cycleEngine()">🔄 Engine: <span id="engine-name">YouTube</span></button>
+            <button class="btn btn-close" onclick="closePlayer()">✖ Close Player</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: HOME -->
+    <section id="view-home" class="view-page">
+      <div class="quick-bar">
+        <input type="text" id="quick-input" placeholder="Paste YouTube Link or Video ID...">
+        <button class="btn btn-primary" onclick="handleQuickPlay()">PLAY NOW</button>
+      </div>
+
+      <div class="section-header">
+        <h3>⭐ Quick Favorites</h3>
+      </div>
+      <div id="home-favorites-grid" class="cards-grid"></div>
+
+      <div class="section-header">
+        <h3>📜 Recently Watched</h3>
+      </div>
+      <div id="home-history-grid" class="cards-grid"></div>
+    </section>
+
+    <!-- TAB 2: SEARCH -->
+    <section id="view-search" class="view-page hidden">
+      <div class="search-bar-container">
+        <input type="text" id="search-query" placeholder="Search videos or channels..." onkeypress="if(event.keyCode==13) executeSearch()">
+        <select id="search-type">
+          <option value="video">Videos</option>
+          <option value="channel">Channels</option>
+        </select>
+        <button class="btn btn-primary" onclick="executeSearch()">SEARCH</button>
+      </div>
+
+      <div id="search-status" class="status-msg"></div>
+      <div id="search-results-grid" class="cards-grid"></div>
+    </section>
+
+    <!-- TAB 3: FAVORITES -->
+    <section id="view-favorites" class="view-page hidden">
+      <div class="sub-nav">
+        <button class="sub-btn active" id="subtab-fav-videos" onclick="switchFavSubtab('videos')">Videos</button>
+        <button class="sub-btn" id="subtab-fav-channels" onclick="switchFavSubtab('channels')">Channels</button>
+      </div>
+
+      <div id="fav-videos-grid" class="cards-grid"></div>
+      <div id="fav-channels-grid" class="cards-grid hidden"></div>
+    </section>
+
+    <!-- TAB 4: HISTORY -->
+    <section id="view-history" class="view-page hidden">
+      <div class="history-actions">
+        <h3>Watch History</h3>
+        <button class="btn btn-danger" onclick="clearHistory()">Clear History</button>
+      </div>
+      <div id="history-grid" class="cards-grid"></div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
