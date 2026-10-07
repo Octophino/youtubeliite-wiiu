@@ -1,19 +1,14 @@
-/* Utendo Font Setup */
 @font-face {
   font-family: 'Utendo';
   src: url('fonts/Utendo-Regular.ttf') format('truetype');
   font-weight: normal;
-  font-style: normal;
 }
-
 @font-face {
   font-family: 'Utendo';
   src: url('fonts/Utendo-Bold.ttf') format('truetype');
   font-weight: bold;
-  font-style: normal;
 }
 
-/* Wii U + YouTube Hybrid Palette */
 :root {
   --wii-bg: #eef3f7;
   --wii-cyan: #00a8e8;
@@ -25,239 +20,88 @@
   --border-color: #d8e2eb;
 }
 
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body {
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   background-color: var(--wii-bg);
   color: var(--text-main);
   font-family: 'Utendo', Arial, sans-serif;
   font-size: 16px;
 }
 
-/* Navigation Bar */
 .navbar {
   background: #ffffff;
   border-bottom: 3px solid var(--wii-cyan);
   padding: 10px 15px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex; justify-content: space-between; align-items: center;
 }
-
-.brand {
-  font-size: 24px;
-  font-weight: bold;
-}
-
+.brand { font-size: 24px; font-weight: bold; }
 .wii-cyan { color: var(--wii-cyan); }
 .yt-red { color: var(--yt-red); }
 
-.nav-tabs {
-  display: flex;
-  gap: 8px;
-}
-
+.nav-tabs { display: flex; gap: 8px; }
 .nav-btn {
-  background: #f0f4f8;
-  border: 2px solid var(--border-color);
-  color: var(--text-main);
-  padding: 10px 16px;
-  border-radius: 20px;
-  font-family: 'Utendo', Arial, sans-serif;
-  font-size: 15px;
-  font-weight: bold;
-  cursor: pointer;
-  height: 48px; /* Large touch target for GamePad */
+  background: #f0f4f8; border: 2px solid var(--border-color);
+  color: var(--text-main); padding: 10px 16px;
+  border-radius: 8px; font-family: inherit; font-weight: bold;
+  cursor: pointer; height: 48px;
 }
+.nav-btn.active { background: var(--wii-cyan); color: #ffffff; border-color: var(--wii-cyan-dark); }
 
-.nav-btn.active {
-  background: var(--wii-cyan);
-  color: #ffffff;
-  border-color: var(--wii-cyan-dark);
-}
+.container { max-width: 960px; margin: 0 auto; padding: 15px; }
+.hidden { display: none !important; }
 
-/* Layout Container */
-.container {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 15px;
-}
-
-.hidden {
-  display: none !important;
-}
-
-/* DigiView Custom Player */
-.player-section {
-  margin-bottom: 20px;
-}
-
-.player-card {
-  background: #111111;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
+/* Custom Player Styles */
+.player-card { background: #111111; border-radius: 12px; overflow: hidden; }
 .player-wrapper {
-  position: relative;
-  width: 100%;
-  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-  height: 0;
-  background: #000000;
+  position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000;
 }
-
 .player-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; pointer-events: none;
 }
 
-.player-controls {
-  padding: 15px;
-  color: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #1a1a1a;
+/* Custom Video Controls overlay */
+.custom-controls {
+  background: #222; padding: 10px; display: flex; justify-content: center; gap: 10px;
+  border-bottom: 2px solid #333;
 }
-
-.video-info h2 {
-  margin: 0 0 5px 0;
-  font-size: 18px;
+.ctrl-btn {
+  background: #444; color: #fff; border: 2px solid #555; border-radius: 6px;
+  padding: 10px 20px; font-weight: bold; font-family: inherit; cursor: pointer;
 }
+.ctrl-btn:active { background: var(--wii-cyan); border-color: #fff; }
 
-.video-info p {
-  margin: 0;
-  color: #aaa;
-  font-size: 14px;
+.player-footer { padding: 15px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; }
+.video-info h2 { margin: 0 0 5px 0; font-size: 18px; }
+.video-info p { margin: 0; color: #aaa; font-size: 14px; }
+.player-actions { display: flex; gap: 8px; }
+
+/* Inputs & UI */
+.quick-bar, .search-bar-container { display: flex; gap: 8px; margin-bottom: 20px; }
+input[type="text"] {
+  flex: 1; height: 50px; padding: 0 15px; font-family: inherit; font-size: 16px;
+  border: 2px solid var(--border-color); border-radius: 8px;
 }
-
-.player-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* Inputs & Buttons */
-.quick-bar, .search-bar-container {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-input[type="text"], select {
-  flex: 1;
-  height: 50px;
-  padding: 0 15px;
-  font-family: 'Utendo', Arial, sans-serif;
-  font-size: 16px;
-  border: 2px solid var(--border-color);
-  border-radius: 10px;
-  background: #ffffff;
-}
-
 .btn {
-  height: 50px;
-  padding: 0 20px;
-  font-family: 'Utendo', Arial, sans-serif;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
+  height: 50px; padding: 0 20px; font-family: inherit; font-weight: bold;
+  border-radius: 8px; border: none; cursor: pointer;
 }
-
 .btn-primary { background: var(--wii-cyan); color: white; }
 .btn-fav { background: #ffaa00; color: white; }
-.btn-engine { background: #444; color: white; }
 .btn-close { background: #dd3333; color: white; }
 .btn-danger { background: var(--yt-red); color: white; }
 
-/* Grid & Cards */
-.section-header {
-  margin: 20px 0 10px 0;
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 5px;
-}
-
-.cards-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
+/* Cards */
+.section-header { margin: 20px 0 10px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; }
+.cards-grid { display: flex; flex-wrap: wrap; gap: 12px; }
 .card {
-  background: var(--card-bg);
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
-  width: calc(33.333% - 8px);
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.1s ease;
+  background: var(--card-bg); border: 2px solid var(--border-color); border-radius: 8px;
+  width: calc(33.333% - 8px); overflow: hidden; cursor: pointer;
 }
-
-.card:active {
-  transform: scale(0.98);
-  border-color: var(--wii-cyan);
-}
-
-.card-thumb {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  background: #ccc;
-}
-
-.card-body {
-  padding: 10px;
-}
-
-.card-title {
-  font-size: 14px;
-  font-weight: bold;
-  margin: 0 0 5px 0;
-  height: 36px;
-  overflow: hidden;
-  line-height: 1.3;
-}
-
-.card-channel {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-.status-msg {
-  padding: 15px;
-  text-align: center;
-  font-weight: bold;
-  color: var(--wii-cyan-dark);
-}
-
-.sub-nav {
-  margin-bottom: 15px;
-}
-
-.sub-btn {
-  padding: 8px 16px;
-  font-size: 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: #fff;
-  cursor: pointer;
-  font-family: 'Utendo', Arial, sans-serif;
-}
-
-.sub-btn.active {
-  background: var(--text-main);
-  color: #fff;
-}
+.card:active { border-color: var(--wii-cyan); }
+.card-thumb { width: 100%; height: 120px; object-fit: cover; background: #ccc; }
+.card-body { padding: 10px; }
+.card-title { font-size: 14px; font-weight: bold; margin: 0 0 5px 0; height: 36px; overflow: hidden; line-height: 1.3; }
+.card-channel { font-size: 12px; color: var(--text-muted); margin: 0; }
+.status-msg { padding: 15px; text-align: center; font-weight: bold; color: var(--wii-cyan-dark); }
