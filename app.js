@@ -1,46 +1,26 @@
-// Active Invidious Failover Instances
-var API_INSTANCES = [
-  'https://yewtu.be',
-  'https://inv.nadeko.net',
-  'https://invidious.drgns.space',
-  'https://invidious.nerdvpn.de'
-];
-
-var activeInstanceIdx = 0;
-var currentEngine = 'youtube'; // 'youtube' | 'invidious'
-var activeVideo = null;
-
-// Persistent Data Stores
-var favorites = loadStorage('yt_liite_favs', { videos: [], channels: [] });
+// Data Stores
+var favorites = loadStorage('yt_liite_favs', []);
 var watchHistory = loadStorage('yt_liite_history', []);
+var activeVideo = null;
+var ytPlayer = null;
 
-// Storage Helpers
+// The proxy fixes Wii U TLS connection blocks to modern APIs
+var CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+var SEARCH_API = 'https://yewtu.be/api/v1/search?q=';
+
 function loadStorage(key, fallback) {
-  try {
-    var data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : fallback;
-  } catch(e) {
-    return fallback;
-  }
+  try { var data = localStorage.getItem(key); return data ? JSON.parse(data) : fallback; } 
+  catch(e) { return fallback; }
 }
-
 function saveStorage(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch(e) {}
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
 }
 
-// Navigation Tabs
 function switchTab(tabId) {
   var pages = document.querySelectorAll('.view-page');
-  for (var i = 0; i < pages.length; i++) {
-    pages[i].classList.add('hidden');
-  }
-  
+  for (var i = 0; i < pages.length; i++) pages[i].classList.add('hidden');
   var btns = document.querySelectorAll('.nav-btn');
-  for (var j = 0; j < btns.length; j++) {
-    btns[j].classList.remove('active');
-  }
+  for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
 
   document.getElementById('view-' + tabId).classList.remove('hidden');
   document.getElementById('tab-' + tabId).classList.add('active');
@@ -50,159 +30,148 @@ function switchTab(tabId) {
   if (tabId === 'history') renderHistory();
 }
 
-// Video Link / ID Extractor
+// Fixed Regex to correctly slice out ?si= tracking garbage from share links
 function parseVideoId(input) {
-  if (!input) return '';
-  input = input.trim();
-  if (input.length === 11 && !input.includes('/') && !input.includes('.')) {
-    return input;
-  }
-  var match = input.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
-  return (match && match[2].length === 11) ? match[2] : '';
+  if (!input) return null;
+  var match = input.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  return match ? match[1] : (input.trim().length === 11 ? input.trim() : null);
+}
+
+// Fetch actual title for a pasted link using YouTube's oEmbed via the proxy
+function fetchMetadataAndPlay(id) {
+  var url = CORS_PROXY + encodeURIComponent('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + id + '&format=json');
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onload = function() {
+    var title = 'Unknown Video';
+    var author = 'Unknown Channel';
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        title = data.title || title;
+        author = data.author_name || author;
+      } catch(e) {}
+    }
+    playVideo({ videoId: id, title: title, author: author, thumb: 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg' });
+  };
+  xhr.onerror = function() {
+    playVideo({ videoId: id, title: 'Video (' + id + ')', author: 'Direct Link', thumb: 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg' });
+  };
+  xhr.send();
 }
 
 function handleQuickPlay() {
   var val = document.getElementById('quick-input').value;
   var id = parseVideoId(val);
   if (id) {
-    playVideo({ videoId: id, title: 'Video (' + id + ')', author: 'Unknown' });
+    document.getElementById('quick-input').value = '';
+    fetchMetadataAndPlay(id);
   } else {
-    alert('Please paste a valid YouTube URL or 11-character Video ID');
+    alert('Invalid link format.');
   }
 }
 
-// DigiView Style Custom Embed
+// CUSTOM PLAYER API INTEGRATION (Controls = 0)
+function onYouTubeIframeAPIReady() {
+  // API is ready to construct custom players
+}
+
 function playVideo(item) {
   activeVideo = item;
   addToHistory(item);
 
-  var section = document.getElementById('player-section');
-  var container = document.getElementById('player-container');
-  var titleEl = document.getElementById('player-title');
-  var channelEl = document.getElementById('player-channel');
-
-  titleEl.innerText = item.title;
-  channelEl.innerText = item.author || '';
-
-  renderPlayerFrame();
-  updateFavButton();
-
-  section.classList.remove('hidden');
+  document.getElementById('player-title').innerText = item.title;
+  document.getElementById('player-channel').innerText = item.author;
+  document.getElementById('player-section').classList.remove('hidden');
   window.scrollTo(0, 0);
-}
 
-function renderPlayerFrame() {
-  var container = document.getElementById('player-container');
-  var id = activeVideo.videoId;
-  var src = '';
-
-  if (currentEngine === 'youtube') {
-    // DigiView-styled lightweight youtube embed params
-    src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&modestbranding=1&rel=0&iv_load_policy=3';
+  if (ytPlayer) {
+    ytPlayer.loadVideoById(item.videoId);
   } else {
-    src = API_INSTANCES[activeInstanceIdx] + '/embed/' + id + '?autoplay=1';
+    ytPlayer = new YT.Player('player-container', {
+      videoId: item.videoId,
+      playerVars: {
+        'controls': 0,          // Hides all YouTube UI
+        'disablekb': 1,         // Disables keyboard shortcuts
+        'modestbranding': 1,    // Hides logos
+        'rel': 0,               // Disables related videos
+        'iv_load_policy': 3     // Hides annotations
+      },
+      events: {
+        'onReady': function(event) { event.target.playVideo(); }
+      }
+    });
   }
-
-  container.innerHTML = '<iframe src="' + src + '" allowfullscreen></iframe>';
+  updateFavButton();
 }
 
-function cycleEngine() {
-  currentEngine = (currentEngine === 'youtube') ? 'invidious' : 'youtube';
-  document.getElementById('engine-name').innerText = (currentEngine === 'youtube') ? 'YouTube' : 'Invidious';
-  if (activeVideo) renderPlayerFrame();
+// Custom Video Controls functions
+function ctrlPlay() { if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo(); }
+function ctrlPause() { if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); }
+function ctrlStop() { if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); }
+function ctrlMute() { 
+  if (ytPlayer && ytPlayer.isMuted) {
+    if (ytPlayer.isMuted()) ytPlayer.unMute(); else ytPlayer.mute();
+  }
 }
 
 function closePlayer() {
-  document.getElementById('player-container').innerHTML = '';
+  if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
   document.getElementById('player-section').classList.add('hidden');
   activeVideo = null;
 }
 
-// Search System with Multi-Instance API Fallback
+// Search using Proxy to bypass TLS blocks
 function executeSearch() {
   var query = document.getElementById('search-query').value.trim();
   if (!query) return;
 
   var directId = parseVideoId(query);
-  if (directId) {
-    playVideo({ videoId: directId, title: 'Direct Link Video', author: '' });
-    return;
-  }
+  if (directId) { fetchMetadataAndPlay(directId); return; }
 
-  var type = document.getElementById('search-type').value;
   var statusEl = document.getElementById('search-status');
   statusEl.innerText = 'Searching...';
   document.getElementById('search-results-grid').innerHTML = '';
 
-  fetchSearchWithFailover(query, type, 0);
-}
-
-function fetchSearchWithFailover(query, type, attempt) {
-  var statusEl = document.getElementById('search-status');
-
-  if (attempt >= API_INSTANCES.length) {
-    statusEl.innerText = 'Search failed on all instances. Paste a direct video link above to play.';
-    return;
-  }
-
-  var instance = API_INSTANCES[attempt];
-  var url = instance + '/api/v1/search?q=' + encodeURIComponent(query) + '&type=' + type;
-
+  var url = CORS_PROXY + encodeURIComponent(SEARCH_API + query);
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
-  xhr.timeout = 5000;
-
+  
   xhr.onload = function() {
     if (xhr.status >= 200 && xhr.status < 300) {
       try {
         var data = JSON.parse(xhr.responseText);
-        activeInstanceIdx = attempt;
         statusEl.innerText = '';
-        renderSearchResults(data, type);
-      } catch(e) {
-        fetchSearchWithFailover(query, type, attempt + 1);
-      }
+        renderSearchResults(data);
+      } catch(e) { statusEl.innerText = 'Error parsing data.'; }
     } else {
-      fetchSearchWithFailover(query, type, attempt + 1);
+      statusEl.innerText = 'Network error. Proxy failed.';
     }
   };
-
-  xhr.onerror = function() { fetchSearchWithFailover(query, type, attempt + 1); };
-  xhr.ontimeout = function() { fetchSearchWithFailover(query, type, attempt + 1); };
+  xhr.onerror = function() { statusEl.innerText = 'Connection blocked by browser.'; };
   xhr.send();
 }
 
-function renderSearchResults(items, type) {
+function renderSearchResults(items) {
   var grid = document.getElementById('search-results-grid');
   grid.innerHTML = '';
-
   for (var i = 0; i < Math.min(items.length, 12); i++) {
     var item = items[i];
-    if (type === 'video' && item.type === 'video') {
+    if (item.type === 'video') {
+      var thumbUrl = item.videoThumbnails ? item.videoThumbnails[0].url : ('https://img.youtube.com/vi/' + item.videoId + '/hqdefault.jpg');
       grid.appendChild(createVideoCard({
-        videoId: item.videoId,
-        title: item.title,
-        author: item.author,
-        thumb: item.videoThumbnails ? item.videoThumbnails[0].url : ''
-      }));
-    } else if (type === 'channel' && item.type === 'channel') {
-      grid.appendChild(createChannelCard({
-        authorId: item.authorId,
-        author: item.author,
-        thumb: item.authorThumbnails ? item.authorThumbnails[0].url : ''
+        videoId: item.videoId, title: item.title, author: item.author, thumb: thumbUrl
       }));
     }
   }
 }
 
-// Card UI Builders
 function createVideoCard(video) {
   var card = document.createElement('div');
   card.className = 'card';
   card.onclick = function() { playVideo(video); };
-
   card.innerHTML = 
-    '<img class="card-thumb" src="' + (video.thumb || '') + '" alt="thumb">' +
+    '<img class="card-thumb" src="' + video.thumb + '">' +
     '<div class="card-body">' +
       '<div class="card-title">' + escapeHtml(video.title) + '</div>' +
       '<div class="card-channel">' + escapeHtml(video.author) + '</div>' +
@@ -210,23 +179,6 @@ function createVideoCard(video) {
   return card;
 }
 
-function createChannelCard(channel) {
-  var card = document.createElement('div');
-  card.className = 'card';
-  card.onclick = function() {
-    toggleChannelFavorite(channel);
-  };
-
-  card.innerHTML = 
-    '<img class="card-thumb" src="' + (channel.thumb || '') + '" alt="thumb">' +
-    '<div class="card-body">' +
-      '<div class="card-title">' + escapeHtml(channel.author) + '</div>' +
-      '<div class="card-channel">Tap to Favorite Channel</div>' +
-    '</div>';
-  return card;
-}
-
-// History & Favorites Management
 function addToHistory(item) {
   watchHistory = watchHistory.filter(function(x) { return x.videoId !== item.videoId; });
   watchHistory.unshift(item);
@@ -235,111 +187,56 @@ function addToHistory(item) {
 }
 
 function clearHistory() {
-  watchHistory = [];
-  saveStorage('yt_liite_history', watchHistory);
-  renderHistory();
+  watchHistory = []; saveStorage('yt_liite_history', watchHistory); renderHistory();
 }
 
 function toggleCurrentFavorite() {
   if (!activeVideo) return;
   var idx = -1;
-  for (var i = 0; i < favorites.videos.length; i++) {
-    if (favorites.videos[i].videoId === activeVideo.videoId) {
-      idx = i;
-      break;
-    }
+  for (var i = 0; i < favorites.length; i++) {
+    if (favorites[i].videoId === activeVideo.videoId) { idx = i; break; }
   }
-
-  if (idx >= 0) {
-    favorites.videos.splice(idx, 1);
-  } else {
-    favorites.videos.unshift(activeVideo);
-  }
+  if (idx >= 0) favorites.splice(idx, 1);
+  else favorites.unshift(activeVideo);
 
   saveStorage('yt_liite_favs', favorites);
   updateFavButton();
 }
 
-function toggleChannelFavorite(channel) {
-  var idx = -1;
-  for (var i = 0; i < favorites.channels.length; i++) {
-    if (favorites.channels[i].authorId === channel.authorId) {
-      idx = i;
-      break;
+function updateFavButton() {
+  var btn = document.getElementById('btn-toggle-fav');
+  var isFav = false;
+  if (activeVideo) {
+    for (var i = 0; i < favorites.length; i++) {
+      if (favorites[i].videoId === activeVideo.videoId) { isFav = true; break; }
     }
   }
-
-  if (idx >= 0) {
-    favorites.channels.splice(idx, 1);
-    alert('Removed channel from favorites');
-  } else {
-    favorites.channels.unshift(channel);
-    alert('Added channel to favorites!');
-  }
-
-  saveStorage('yt_liite_favs', favorites);
+  btn.innerText = isFav ? '[ REMOVE FAV ]' : '[ ADD FAV ]';
+  btn.style.background = isFav ? '#dd3333' : '#ffaa00';
 }
 
-function updateFavButton() {
-  if (!activeVideo) return;
-  var btn = document.getElementById('btn-toggle-fav');
-  var isFav = favorites.videos.some(function(x) { return x.videoId === activeVideo.videoId; });
-  btn.innerText = isFav ? '★ Favorited' : '☆ Favorite';
-}
-
-// Render Page Sections
 function renderHome() {
-  var favGrid = document.getElementById('home-favorites-grid');
-  var histGrid = document.getElementById('home-history-grid');
-
-  favGrid.innerHTML = favorites.videos.length ? '' : '<div style="color:#888; padding:10px;">No favorites added yet.</div>';
-  for (var i = 0; i < Math.min(favorites.videos.length, 3); i++) {
-    favGrid.appendChild(createVideoCard(favorites.videos[i]));
-  }
-
-  histGrid.innerHTML = watchHistory.length ? '' : '<div style="color:#888; padding:10px;">No watch history yet.</div>';
-  for (var j = 0; j < Math.min(watchHistory.length, 3); j++) {
-    histGrid.appendChild(createVideoCard(watchHistory[j]));
-  }
+  var fg = document.getElementById('home-favorites-grid'); fg.innerHTML = '';
+  for (var i = 0; i < Math.min(favorites.length, 3); i++) fg.appendChild(createVideoCard(favorites[i]));
+  var hg = document.getElementById('home-history-grid'); hg.innerHTML = '';
+  for (var j = 0; j < Math.min(watchHistory.length, 3); j++) hg.appendChild(createVideoCard(watchHistory[j]));
 }
 
 function renderFavorites() {
-  var vGrid = document.getElementById('fav-videos-grid');
-  var cGrid = document.getElementById('fav-channels-grid');
-
-  vGrid.innerHTML = favorites.videos.length ? '' : '<div style="color:#888; padding:10px;">No favorite videos.</div>';
-  for (var i = 0; i < favorites.videos.length; i++) {
-    vGrid.appendChild(createVideoCard(favorites.videos[i]));
-  }
-
-  cGrid.innerHTML = favorites.channels.length ? '' : '<div style="color:#888; padding:10px;">No favorite channels.</div>';
-  for (var j = 0; j < favorites.channels.length; j++) {
-    cGrid.appendChild(createChannelCard(favorites.channels[j]));
-  }
-}
-
-function switchFavSubtab(type) {
-  document.getElementById('subtab-fav-videos').className = 'sub-btn' + (type === 'videos' ? ' active' : '');
-  document.getElementById('subtab-fav-channels').className = 'sub-btn' + (type === 'channels' ? ' active' : '');
-
-  document.getElementById('fav-videos-grid').className = 'cards-grid' + (type === 'videos' ? '' : ' hidden');
-  document.getElementById('fav-channels-grid').className = 'cards-grid' + (type === 'channels' ? '' : ' hidden');
+  var grid = document.getElementById('fav-videos-grid'); grid.innerHTML = '';
+  for (var i = 0; i < favorites.length; i++) grid.appendChild(createVideoCard(favorites[i]));
 }
 
 function renderHistory() {
-  var grid = document.getElementById('history-grid');
-  grid.innerHTML = watchHistory.length ? '' : '<div style="color:#888; padding:10px;">No watch history yet.</div>';
-  for (var i = 0; i < watchHistory.length; i++) {
-    grid.appendChild(createVideoCard(watchHistory[i]));
-  }
+  var grid = document.getElementById('history-grid'); grid.innerHTML = '';
+  for (var i = 0; i < watchHistory.length; i++) grid.appendChild(createVideoCard(watchHistory[i]));
 }
 
 function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return (str || '').replace(/[&<>'"]/g, function(tag) {
+    var chars = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+    return chars[tag] || tag;
+  });
 }
 
-// Initial Load
-window.onload = function() {
-  renderHome();
-};
+window.onload = function() { switchTab('home'); };
