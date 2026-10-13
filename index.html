@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Youtube Liite - Wii U test page</title>
+<style type="text/css">
+@font-face {
+  font-family: "Utendo";
+  src: url("utendo.woff") format("woff"),
+       url("utendo.ttf") format("truetype"),
+       url("utendo.otf") format("opentype");
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f2f2f2;
+  color: #444444;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+}
+
+#header {
+  padding: 14px 20px;
+  background: #4ebcff;
+  background: -webkit-linear-gradient(top, #8fd6ff 0%, #4ebcff 50%, #009ac7 100%);
+  background: linear-gradient(to bottom, #8fd6ff 0%, #4ebcff 50%, #009ac7 100%);
+  border-bottom: 3px solid #007a9f;
+}
+
+#header h1 {
+  margin: 0;
+  font-family: "Utendo", Arial, Helvetica, sans-serif;
+  font-size: 34px;
+  color: #ffffff;
+  text-shadow: 0 1px 2px #006a8a;
+}
+
+#content {
+  padding: 16px 20px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e7e7e7;
+  border-radius: 10px;
+  -webkit-box-shadow: 0 2px 4px #c8c8c8;
+  box-shadow: 0 2px 4px #c8c8c8;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+  color: #009ac7;
+}
+
+.fontline {
+  font-size: 28px;
+  margin: 4px 0;
+}
+
+#fontutendo {
+  font-family: "Utendo", Arial, Helvetica, sans-serif;
+}
+
+#fontplain {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.gradbox {
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid #007a9f;
+  background: #4ebcff;
+  background: -webkit-linear-gradient(top, #b5e3ff 0%, #4ebcff 50%, #1fa8e6 51%, #009ac7 100%);
+  background: linear-gradient(to bottom, #b5e3ff 0%, #4ebcff 50%, #1fa8e6 51%, #009ac7 100%);
+}
+
+#tapbtn {
+  font-family: "Utendo", Arial, Helvetica, sans-serif;
+  font-size: 22px;
+  color: #ffffff;
+  padding: 12px 28px;
+  border: 1px solid #007a9f;
+  border-radius: 8px;
+  background: #4ebcff;
+  background: -webkit-linear-gradient(top, #b5e3ff 0%, #4ebcff 50%, #1fa8e6 51%, #009ac7 100%);
+  background: linear-gradient(to bottom, #b5e3ff 0%, #4ebcff 50%, #1fa8e6 51%, #009ac7 100%);
+  text-shadow: 0 1px 1px #006a8a;
+}
+
+#results {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#results td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #e7e7e7;
+  vertical-align: top;
+}
+
+#results td.label {
+  width: 50%;
+}
+
+.ok {
+  color: #009ac7;
+  font-weight: bold;
+}
+
+.ko {
+  color: #cc181e;
+  font-weight: bold;
+}
+
+.info {
+  color: #444444;
+}
+
+.wait {
+  color: #8b8b8b;
+}
+
+#ua {
+  word-wrap: break-word;
+  font-size: 15px;
+  color: #7d7d7d;
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Youtube Liite - test page</h1>
+</div>
+
+<div id="content">
+
+  <div class="card">
+    <h2>1. Did the page load?</h2>
+    <p>If you can read this, HTML and CSS work and the page was downloaded.</p>
+    <p id="jsmsg">JavaScript did NOT run. The results below will stay empty.</p>
+  </div>
+
+  <div class="card">
+    <h2>2. Font and visuals</h2>
+    <p>Line 1 should use the Utendo font. Line 2 is a normal font. If both look the same, the font did not load.</p>
+    <p class="fontline" id="fontutendo">Line 1: Youtube Liite 0123456789</p>
+    <p class="fontline" id="fontplain">Line 2: Youtube Liite 0123456789</p>
+    <p>Gradient bar and glossy button (look for a smooth light-to-dark blue):</p>
+    <div class="gradbox"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Touch / click test</h2>
+    <p>Tap the button with the GamePad screen, then try again with the GamePad buttons or the pointer if you can. The counter should go up each time.</p>
+    <p><button type="button" id="tapbtn">Tap me</button></p>
+    <p id="tapcount">Taps: 0</p>
+  </div>
+
+  <div class="card">
+    <h2>4. Automatic tests</h2>
+    <p>Please send me what you read here (a photo taken with your phone is fine).</p>
+    <table id="results" cellspacing="0" cellpadding="0"></table>
+  </div>
+
+  <div class="card">
+    <h2>5. Browser identity</h2>
+    <p id="ua"></p>
+  </div>
+
+</div>
+
+<script type="text/javascript">
+(function () {
+  var table = document.getElementById("results");
+
+  function makeRow(name) {
+    var tr = table.insertRow(-1);
+    var c1 = tr.insertCell(-1);
+    var c2 = tr.insertCell(-1);
+    c1.className = "label";
+    c1.appendChild(document.createTextNode(name));
+    c2.className = "wait";
+    c2.appendChild(document.createTextNode("..."));
+    return {
+      set: function (status, detail) {
+        var cls = "info";
+        if (status === "OK") {
+          cls = "ok";
+        } else if (status === "NO") {
+          cls = "ko";
+        }
+        c2.className = cls;
+        c2.firstChild.nodeValue = detail ? status + " - " + detail : status;
+      }
+    };
+  }
+
+  var r;
+
+  // JavaScript message
+  document.getElementById("jsmsg").firstChild.nodeValue = "JavaScript is running.";
+
+  // Page protocol
+  r = makeRow("Page address type");
+  r.set("INFO", String(window.location.protocol));
+
+  // Window size
+  r = makeRow("Window size (width x height)");
+  r.set("INFO", String(window.innerWidth) + " x " + String(window.innerHeight));
+
+  // Screen size
+  r = makeRow("Screen size (width x height)");
+  try {
+    r.set("INFO", String(window.screen.width) + " x " + String(window.screen.height));
+  } catch (eScreen) {
+    r.set("INFO", "unknown");
+  }
+
+  // localStorage
+  r = makeRow("localStorage (to save favorites)");
+  try {
+    window.localStorage.setItem("liite_test", "1");
+    var got = window.localStorage.getItem("liite_test");
+    window.localStorage.removeItem("liite_test");
+    if (got === "1") {
+      r.set("OK");
+    } else {
+      r.set("NO", "value was not kept");
+    }
+  } catch (eStore) {
+    r.set("NO", "not available");
+  }
+
+  // Cookies
+  r = makeRow("Cookies");
+  try {
+    document.cookie = "liite_test=1; path=/";
+    var hasCookie = document.cookie.indexOf("liite_test=1") !== -1;
+    document.cookie = "liite_test=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    r.set(hasCookie ? "OK" : "NO");
+  } catch (eCookie) {
+    r.set("NO", "error");
+  }
+
+  // JSON
+  r = makeRow("JSON");
+  if (window.JSON && typeof window.JSON.parse === "function") {
+    r.set("OK");
+  } else {
+    r.set("NO");
+  }
+
+  // Load a local data file
+  var xhrRow = makeRow("Load a data file (test.json)");
+  var xhrDone = false;
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "test.json?t=" + new Date().getTime(), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4 || xhrDone) {
+        return;
+      }
+      xhrDone = true;
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          if (data && data.hello === "Wii U") {
+            xhrRow.set("OK");
+          } else {
+            xhrRow.set("NO", "file loaded but content is wrong");
+          }
+        } catch (eParse) {
+          xhrRow.set("NO", "file loaded but could not be read");
+        }
+      } else {
+        xhrRow.set("NO", "status " + xhr.status);
+      }
+    };
+    xhr.send(null);
+    setTimeout(function () {
+      if (!xhrDone) {
+        xhrDone = true;
+        xhrRow.set("NO", "no answer after 10 seconds");
+      }
+    }, 10000);
+  } catch (eXhr) {
+    xhrDone = true;
+    xhrRow.set("NO", "error");
+  }
+
+  // External image (YouTube thumbnail server)
+  var imgRow = makeRow("Image from YouTube servers (https)");
+  var imgDone = false;
+  var img = new Image();
+  img.onload = function () {
+    if (imgDone) {
+      return;
+    }
+    imgDone = true;
+    imgRow.set("OK", String(img.width) + " x " + String(img.height));
+  };
+  img.onerror = function () {
+    if (imgDone) {
+      return;
+    }
+    imgDone = true;
+    imgRow.set("NO", "could not load");
+  };
+  img.src = "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg";
+  setTimeout(function () {
+    if (!imgDone) {
+      imgDone = true;
+      imgRow.set("NO", "no answer after 10 seconds");
+    }
+  }, 10000);
+
+  // Video formats
+  r = makeRow("Video tag (mp4 H.264 / webm)");
+  try {
+    var vid = document.createElement("video");
+    if (vid && typeof vid.canPlayType === "function") {
+      var mp4 = vid.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
+      var webm = vid.canPlayType('video/webm; codecs="vp8, vorbis"');
+      r.set(mp4 ? "OK" : "NO", "mp4: " + (mp4 || "no") + " / webm: " + (webm || "no"));
+    } else {
+      r.set("NO", "no video support");
+    }
+  } catch (eVideo) {
+    r.set("NO", "error");
+  }
+
+  // Language and browser features
+  function feature(name, test) {
+    var row = makeRow(name);
+    try {
+      row.set(test() ? "OK" : "NO");
+    } catch (eFeat) {
+      row.set("NO");
+    }
+  }
+
+  feature("Modern JavaScript (let, const, arrow functions)", function () {
+    new Function("let a = 1; const b = function () { return a; }; var c = () => a; return c();");
+    return true;
+  });
+  feature("Promise", function () {
+    return typeof window.Promise !== "undefined";
+  });
+  feature("fetch()", function () {
+    return typeof window.fetch === "function";
+  });
+  feature("MediaSource (used by most YouTube-style players)", function () {
+    return typeof window.MediaSource !== "undefined" || typeof window.WebKitMediaSource !== "undefined";
+  });
+  feature("requestAnimationFrame", function () {
+    return typeof window.requestAnimationFrame === "function";
+  });
+  feature("Touch events", function () {
+    return "ontouchstart" in window;
+  });
+
+  // Browser identity
+  document.getElementById("ua").appendChild(document.createTextNode(String(navigator.userAgent)));
+
+  // Tap counter
+  var count = 0;
+  var btn = document.getElementById("tapbtn");
+  var counter = document.getElementById("tapcount");
+  btn.addEventListener("click", function () {
+    count = count + 1;
+    counter.firstChild.nodeValue = "Taps: " + count;
+  }, false);
+})();
+</script>
+
+</body>
+</html>
