@@ -129,6 +129,14 @@ video {
     <p><a href="test-640.mp4">Open the video file directly</a></p>
   </div>
 
+  <div class="card">
+    <h2>Test C - YouTube embed (just to see)</h2>
+    <p>This is the normal YouTube player placed in a frame. I expect it to fail on the Wii U, but let's check. Press the button, then tell me what appears: nothing, an error window, or a player. If an error window appears, a photo of it is perfect.</p>
+    <p><button type="button" class="btn" id="loadyt">Load the YouTube embed</button></p>
+    <p class="status" id="ytinfo">Not loaded yet.</p>
+    <div id="ytbox"></div>
+  </div>
+
 </div>
 
 <script type="text/javascript">
@@ -215,6 +223,26 @@ video {
 
   setup(1);
   setup(2);
+
+  // Test C: YouTube embed, added only when the button is pressed
+  var ytInfo = document.getElementById("ytinfo");
+  document.getElementById("loadyt").addEventListener("click", function () {
+    var box = document.getElementById("ytbox");
+    try {
+      var frame = document.createElement("iframe");
+      frame.setAttribute("width", "320");
+      frame.setAttribute("height", "180");
+      frame.setAttribute("frameborder", "0");
+      frame.onload = function () {
+        ytInfo.firstChild.nodeValue = "The frame finished loading (this alone does not prove the player works).";
+      };
+      frame.src = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+      box.appendChild(frame);
+      ytInfo.firstChild.nodeValue = "Frame added. Waiting...";
+    } catch (eFrame) {
+      ytInfo.firstChild.nodeValue = "Could not add the frame.";
+    }
+  }, false);
 })();
 </script>
 
